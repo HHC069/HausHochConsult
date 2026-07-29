@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow,noarchive" />
+    <title>Goldsteinstraße 109/109a | Marktpreiseinschätzung</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #173d35;
+        background: #f4f0e8;
+      }
+      * { box-sizing: border-box; }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at 20% 10%, rgb(194 157 82 / 18%), transparent 32rem),
+          linear-gradient(145deg, #f7f3eb, #e9e2d5);
+      }
+      main {
+        width: min(28rem, calc(100% - 2rem));
+        text-align: center;
+      }
+      .mark {
+        display: grid;
+        width: 4rem;
+        height: 4rem;
+        margin: 0 auto 1.25rem;
+        place-items: center;
+        border: 1px solid rgb(23 61 53 / 24%);
+        border-radius: 1.25rem;
+        background: rgb(255 255 255 / 76%);
+        box-shadow: 0 1rem 2.5rem rgb(23 61 53 / 12%);
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+      p { margin: 0 0 1rem; line-height: 1.6; }
+      .track {
+        height: 0.25rem;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgb(23 61 53 / 12%);
+      }
+      .bar {
+        width: 0;
+        height: 100%;
+        border-radius: inherit;
+        background: #173d35;
+        transition: width 160ms ease;
+      }
+      .error {
+        color: #7b2929;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark" aria-hidden="true">HH</div>
+      <p id="status">Marktpreiseinschätzung wird geladen …</p>
+      <div class="track" aria-hidden="true"><div class="bar" id="bar"></div></div>
+    </main>
+    <script>
+      const chunkCount = 24;
+      const statusElement = document.getElementById("status");
+      const barElement = document.getElementById("bar");
+
+      async function loadSite() {
+        let completed = 0;
+        const chunks = await Promise.all(
+          Array.from({ length: chunkCount }, async (_, index) => {
+            const name = String(index).padStart(3, "0");
+            const response = await fetch(`chunks/chunk-${name}`);
+            if (!response.ok) throw new Error(`Teil ${name} konnte nicht geladen werden.`);
+            const chunk = await response.text();
+            completed += 1;
+            barElement.style.width = `${Math.round((completed / chunkCount) * 100)}%`;
+            return chunk.trim();
+          })
+        );
+
+        const binary = atob(chunks.join(""));
+        const bytes = new Uint8Array(binary.length);
+        for (let index = 0; index < binary.length; index += 1) {
+          bytes[index] = binary.charCodeAt(index);
+        }
+        let html = new TextDecoder("utf-8").decode(bytes);
+        html = html.replace(
+          "</head>",
+          '<meta name="robots" content="noindex,nofollow,noarchive"></head>'
+        );
+        document.open();
+        document.write(html);
+        document.close();
+      }
+
+      loadSite().catch((error) => {
+        statusElement.className = "error";
+        statusElement.textContent =
+          "Die Marktpreiseinschätzung konnte nicht vollständig geladen werden. Bitte öffnen Sie den Link erneut.";
+        console.error(error);
+      });
+    </script>
+  </body>
+</html>
